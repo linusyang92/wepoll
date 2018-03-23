@@ -1,3 +1,6 @@
+#include <stdlib.h>
+
+#include "error.h"
 #include "proto.h"
 #include "tree.h"
 #include "win.h"
