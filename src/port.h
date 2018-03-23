@@ -23,6 +23,7 @@ typedef struct ep_port {
   reflock_tree_node_t handle_tree_node;
   CRITICAL_SECTION lock;
   size_t active_poll_count;
+  proto_info_t proto;
 } ep_port_t;
 
 WEPOLL_INTERNAL ep_port_t* ep_port_new(HANDLE* iocp_out);

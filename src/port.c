@@ -55,6 +55,7 @@ ep_port_t* ep_port_new(HANDLE* iocp_out) {
   tree_init(&port_info->sock_tree);
   reflock_tree_node_init(&port_info->handle_tree_node);
   InitializeCriticalSection(&port_info->lock);
+  proto_info_init(&port_info->proto);
 
   *iocp_out = iocp;
   return port_info;
@@ -106,6 +107,8 @@ int ep_port_delete(ep_port_t* port_info) {
     poll_group_allocator_delete(port_info->poll_group_allocator);
 
   DeleteCriticalSection(&port_info->lock);
+
+  proto_info_delete(&port_info->proto);
 
   _ep_port_free(port_info);
 

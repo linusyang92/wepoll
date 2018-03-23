@@ -1,6 +1,7 @@
 #include "afd.h"
 #include "error.h"
 #include "nt.h"
+#include "proto.h"
 #include "util.h"
 #include "win.h"
 
@@ -105,7 +106,8 @@ static SOCKET _afd_get_base_socket(SOCKET socket) {
   return base_socket;
 }
 
-static int _afd_get_protocol_info(SOCKET socket,
+static int _afd_get_protocol_info(proto_info_t* proto_info,
+                                  SOCKET socket,
                                   WSAPROTOCOL_INFOW* protocol_info) {
   int opt_len;
   size_t i;
@@ -117,6 +119,19 @@ static int _afd_get_protocol_info(SOCKET socket,
                  (char*) protocol_info,
                  &opt_len) != 0)
     return_error(-1);
+
+  /* If the socket is controlled by a layered service provider, seek to the
+   * protocol at the end of the protocol chain. */
+  if (protocol_info->ProtocolChain.ChainLen > 0) {
+    DWORD catalog_id =
+        protocol_info->ProtocolChain
+            .ChainEntries[protocol_info->ProtocolChain.ChainLen - 1];
+    proto_node_t* proto_node = find_proto_node(proto_info, catalog_id);
+    if (proto_node != NULL &&
+        proto_node->info.dwCatalogEntryId == catalog_id) {
+      *protocol_info = proto_node->info;
+    }
+  }
 
   for (i = 0; i < array_count(AFD_PROVIDER_GUID_LIST); i++) {
     if (memcmp(&protocol_info->ProviderId,
@@ -130,7 +145,8 @@ static int _afd_get_protocol_info(SOCKET socket,
   return_error(-1, ERROR_DEVICE_FEATURE_NOT_SUPPORTED);
 }
 
-WEPOLL_INTERNAL int afd_get_protocol_info(SOCKET socket,
+WEPOLL_INTERNAL int afd_get_protocol_info(proto_info_t* proto_info,
+                                          SOCKET socket,
                                           SOCKET* afd_socket_out,
                                           WSAPROTOCOL_INFOW* protocol_info) {
   SOCKET afd_socket;
@@ -140,7 +156,7 @@ WEPOLL_INTERNAL int afd_get_protocol_info(SOCKET socket,
    * socket. This should almost always be the case, and if it is, that saves us
    * a call to WSAIoctl(). */
   afd_socket = socket;
-  r = _afd_get_protocol_info(afd_socket, protocol_info);
+  r = _afd_get_protocol_info(proto_info, afd_socket, protocol_info);
 
   if (r < 0) {
     /* If getting protocol information failed, it might be due to the socket
@@ -154,7 +170,7 @@ WEPOLL_INTERNAL int afd_get_protocol_info(SOCKET socket,
     if (afd_socket == INVALID_SOCKET || afd_socket == socket)
       return_error(-1, error);
 
-    r = _afd_get_protocol_info(afd_socket, protocol_info);
+    r = _afd_get_protocol_info(proto_info, afd_socket, protocol_info);
     if (r < 0)
       return -1;
   }

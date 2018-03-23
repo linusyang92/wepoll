@@ -180,7 +180,7 @@ ep_sock_t* ep_sock_new(ep_port_t* port_info, SOCKET socket) {
   if (socket == 0 || socket == INVALID_SOCKET)
     return_error(NULL, ERROR_INVALID_HANDLE);
 
-  if (afd_get_protocol_info(socket, &afd_socket, &protocol_info) < 0)
+  if (afd_get_protocol_info(&port_info->proto, socket, &afd_socket, &protocol_info) < 0)
     return NULL;
 
   poll_group = ep_port_acquire_poll_group(port_info, &protocol_info);

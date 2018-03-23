@@ -3,6 +3,7 @@
 
 #include "internal.h"
 #include "nt.h"
+#include "proto.h"
 #include "util.h"
 #include "win.h"
 
@@ -56,7 +57,8 @@ WEPOLL_INTERNAL int afd_poll(SOCKET driver_socket,
                              AFD_POLL_INFO* poll_info,
                              OVERLAPPED* overlapped);
 
-WEPOLL_INTERNAL int afd_get_protocol_info(SOCKET socket,
+WEPOLL_INTERNAL int afd_get_protocol_info(proto_info_t* proto_info,
+                                          SOCKET socket,
                                           SOCKET* afd_socket_out,
                                           WSAPROTOCOL_INFOW* protocol_info);
 
